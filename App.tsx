@@ -33,7 +33,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden font-sans text-slate-100">
-      
+
       {/* Background Layer */}
       <div className="absolute inset-0 z-0">
         <img src={BG_IMAGE} alt="Background" className="w-full h-full object-cover opacity-40" />
@@ -43,7 +43,7 @@ const App: React.FC = () => {
 
       {/* Main Content Container */}
       <div className={`z-10 w-full max-w-5xl px-6 transition-all duration-300 transform ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-        
+
         {/* Header Branding */}
         <div className={`text-center mb-12 transition-all duration-500 ${view !== 'landing' ? 'mb-8 scale-90' : ''}`}>
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 mb-6 shadow-2xl shadow-blue-500/20">
@@ -59,13 +59,13 @@ const App: React.FC = () => {
 
         {/* View Switcher */}
         <div className="flex justify-center">
-          
+
           {/* LANDING PAGE - Dedicated to Builder Access */}
           {view === 'landing' && (
             <div className="w-full max-w-2xl">
               <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-48 bg-blue-500/10 rounded-full blur-[100px] -mr-24 -mt-24"></div>
-                
+
                 <div className="relative z-10 flex flex-col items-center text-center">
                   <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-8 group-hover:scale-110 transition-transform duration-500">
                     <Building size={32} />
@@ -74,8 +74,8 @@ const App: React.FC = () => {
                   <p className="text-slate-400 text-lg mb-10 max-w-md">
                     Control unit availability, monitor buyer engagement, and host live sessions from a centralized dashboard.
                   </p>
-                  
-                  <button 
+
+                  <button
                     onClick={() => navigateTo('builder-login')}
                     className="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transform active:scale-95"
                   >
@@ -102,7 +102,7 @@ const App: React.FC = () => {
           {view === 'builder-login' && (
             <div className="w-full max-w-md">
               <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-                <button 
+                <button
                   onClick={() => navigateTo('landing')}
                   className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
                 >
@@ -119,8 +119,8 @@ const App: React.FC = () => {
                       <div className="absolute left-4 top-3.5 text-slate-500">
                         <User size={18} />
                       </div>
-                      <input 
-                        type="email" 
+                      <input
+                        type="email"
                         defaultValue="admin@risewith9.com"
                         className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all"
                         placeholder="admin@risewith9.com"
@@ -134,8 +134,8 @@ const App: React.FC = () => {
                       <div className="absolute left-4 top-3.5 text-slate-500">
                         <Lock size={18} />
                       </div>
-                      <input 
-                        type="password" 
+                      <input
+                        type="password"
                         defaultValue="password"
                         className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all"
                         placeholder="••••••••"
@@ -143,8 +143,8 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-4 rounded-xl transition-all shadow-lg shadow-blue-500/25 transform active:scale-95 mt-4"
                   >
                     Enter Builder Console
@@ -152,7 +152,7 @@ const App: React.FC = () => {
                 </form>
 
                 <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                   <p className="text-[10px] text-slate-600 uppercase tracking-[0.2em] font-bold">Enterprise Security • Risewith9 System</p>
+                  <p className="text-[10px] text-slate-600 uppercase tracking-[0.2em] font-bold">Enterprise Security • Risewith9 System</p>
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@ const App: React.FC = () => {
 
         </div>
       </div>
-      
+
       {/* Footer Branding */}
       <div className="absolute bottom-6 flex items-center gap-2 text-slate-600 text-[10px] font-bold tracking-[0.3em] uppercase z-10">
         <ShieldCheck size={12} className="text-blue-500/50" />
