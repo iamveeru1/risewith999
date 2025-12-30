@@ -23,6 +23,8 @@ export interface Buyer {
   email: string;
   phone: string;
   assignedUnitId: string | null;
+  accessCode?: string; // Generated access code from API
+  codeGeneratedAt?: number; // Timestamp when code was generated (for 60 min expiry)
 }
 
 export interface AccessCode {

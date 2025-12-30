@@ -1,13 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BuilderDashboard } from './components/BuilderDashboard';
 import { store } from './services/mockStore';
 import { Lock, ArrowRight, ShieldCheck, User, Building, ChevronLeft, LayoutGrid } from 'lucide-react';
+import { loginWithEmailPassword, logout as firebaseLogout, onAuthChange } from './services/authService';
 
 type ViewState = 'landing' | 'builder-login' | 'builder-dashboard';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('landing');
   const [isAnimating, setIsAnimating] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+  // Check authentication state on mount
+  useEffect(() => {
+    const unsubscribe = onAuthChange((user) => {
+      if (user) {
+        // User is signed in
+        setView('builder-dashboard');
+      } else {
+        // User is signed out
+        if (view === 'builder-dashboard') {
+          setView('landing');
+        }
+      }
+      setIsAuthChecking(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Helper to handle view transitions
   const navigateTo = (newView: ViewState) => {
@@ -18,15 +42,44 @@ const App: React.FC = () => {
     }, 300);
   };
 
-  // Login Handlers
-  const handleBuilderLogin = (e: React.FormEvent) => {
+  const handleBuilderLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigateTo('builder-dashboard');
+    setLoginError('');
+    setIsLoggingIn(true);
+
+    const result = await loginWithEmailPassword(email, password);
+
+    setIsLoggingIn(false);
+
+    if (result.success) {
+      navigateTo('builder-dashboard');
+    } else {
+      setLoginError(result.error || 'Login failed. Please try again.');
+    }
   };
+
+  const handleLogout = async () => {
+    const result = await firebaseLogout();
+    if (result.success) {
+      navigateTo('landing');
+    }
+  };
+
+  // Show loading screen while checking auth
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Views that take over the full screen
   if (view === 'builder-dashboard') {
-    return <BuilderDashboard />;
+    return <BuilderDashboard onLogout={handleLogout} />;
   }
 
   const BG_IMAGE = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop";
@@ -113,6 +166,12 @@ const App: React.FC = () => {
                 <p className="text-slate-400 mb-8">Secure access to project data</p>
 
                 <form onSubmit={handleBuilderLogin} className="space-y-5">
+                  {loginError && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                      <p className="text-red-400 text-sm">{loginError}</p>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-300 ml-1">Administrator Email</label>
                     <div className="relative">
@@ -121,9 +180,12 @@ const App: React.FC = () => {
                       </div>
                       <input
                         type="email"
-                        defaultValue="admin@risewith9.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all"
                         placeholder="admin@risewith9.com"
+                        required
+                        disabled={isLoggingIn}
                       />
                     </div>
                   </div>
@@ -136,18 +198,22 @@ const App: React.FC = () => {
                       </div>
                       <input
                         type="password"
-                        defaultValue="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all"
                         placeholder="••••••••"
+                        required
+                        disabled={isLoggingIn}
                       />
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-4 rounded-xl transition-all shadow-lg shadow-blue-500/25 transform active:scale-95 mt-4"
+                    disabled={isLoggingIn}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-4 rounded-xl transition-all shadow-lg shadow-blue-500/25 transform active:scale-95 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Enter Builder Console
+                    {isLoggingIn ? 'Logging in...' : 'Enter Builder Console'}
                   </button>
                 </form>
 

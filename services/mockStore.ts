@@ -34,18 +34,26 @@ const generateMockUnits = (): Unit[] => {
 const MOCK_UNITS = generateMockUnits();
 
 const MOCK_BUYERS: Buyer[] = [
-  { id: 'b1', name: 'Alice Johnson', email: 'alice@example.com', phone: '+1 555-0101', assignedUnitId: '9 South-1-1' },
+  {
+    id: 'b1',
+    name: 'Alice Johnson',
+    email: 'alice@example.com',
+    phone: '+1 555-0101',
+    assignedUnitId: '9 South-1-1',
+    accessCode: 'RISE-9999',
+    codeGeneratedAt: Date.now() - (10 * 60 * 1000) // Generated 10 minutes ago for testing
+  },
   { id: 'b2', name: 'Bob Smith', email: 'bob@example.com', phone: '+1 555-0102', assignedUnitId: null },
 ];
 
 const MOCK_CODES: AccessCode[] = [
-  { 
-    code: 'RISE-9999', 
-    buyerId: 'b1', 
-    unitId: '9 South-1-1', 
-    generatedAt: Date.now(), 
-    expiresAt: Date.now() + 3600000, 
-    isUsed: false 
+  {
+    code: 'RISE-9999',
+    buyerId: 'b1',
+    unitId: '9 South-1-1',
+    generatedAt: Date.now(),
+    expiresAt: Date.now() + 3600000,
+    isUsed: false
   }
 ];
 
@@ -63,13 +71,13 @@ class StoreService {
   private codes: AccessCode[] = MOCK_CODES;
 
   getUnits() { return [...this.units]; }
-  
+
   toggleUnitStatus(id: string, newStatus?: UnitStatus) {
     this.units = this.units.map(u => {
       if (u.id === id) {
-        return { 
-          ...u, 
-          status: newStatus || (u.status === UnitStatus.AVAILABLE ? UnitStatus.LOCKED : UnitStatus.AVAILABLE) 
+        return {
+          ...u,
+          status: newStatus || (u.status === UnitStatus.AVAILABLE ? UnitStatus.LOCKED : UnitStatus.AVAILABLE)
         };
       }
       return u;
@@ -79,6 +87,14 @@ class StoreService {
 
   getBuyers() { return [...this.buyers]; }
   addBuyer(buyer: Buyer) { this.buyers.push(buyer); return this.getBuyers(); }
+  updateBuyer(updatedBuyer: Buyer) {
+    this.buyers = this.buyers.map(b => b.id === updatedBuyer.id ? updatedBuyer : b);
+    return this.getBuyers();
+  }
+  deleteBuyer(buyerId: string) {
+    this.buyers = this.buyers.filter(b => b.id !== buyerId);
+    return this.getBuyers();
+  }
   generateCode(buyerId: string, unitId: string): AccessCode {
     const code = `RISE-${Math.floor(1000 + Math.random() * 9000)}`;
     const newCode: AccessCode = { code, buyerId, unitId, generatedAt: Date.now(), expiresAt: Date.now() + 3600000, isUsed: false };
