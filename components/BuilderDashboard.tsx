@@ -8,6 +8,13 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { store, MOCK_ANALYTICS } from '../services/mockStore';
 import { generateUnitDescription, generateAnalyticsInsight } from '../services/geminiService';
+import {
+  getAllBuyers as getAllBuyersAPI,
+  createBuyer as createBuyerAPI,
+  updateBuyer as updateBuyerAPI,
+  deleteBuyer as deleteBuyerAPI,
+  generateAccessCode as generateAccessCodeAPI
+} from '../services/apiService';
 import { Unit, UnitStatus, Buyer } from '../types';
 
 // Image Imports
@@ -32,7 +39,7 @@ interface BuilderDashboardProps {
 export const BuilderDashboard: React.FC<BuilderDashboardProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<'projects' | 'buyers' | 'analytics'>('projects');
   const [units, setUnits] = useState<Unit[]>(store.getUnits());
-  const [buyers, setBuyers] = useState<Buyer[]>(store.getBuyers());
+  const [buyers, setBuyers] = useState<Buyer[]>([]); // Start with empty array, will load from API
   const [aiInsight, setAiInsight] = useState<string>("");
   const [loadingAi, setLoadingAi] = useState(false);
 
@@ -57,19 +64,21 @@ export const BuilderDashboard: React.FC<BuilderDashboardProps> = ({ onLogout }) 
     setSelectedUnit(null);
   };
 
-  const handleIssueKey = (buyer: Buyer) => {
-    // TODO: Replace with actual API call
-    // For now, simulating API response with generated code
-    const codeObj = store.generateCode(buyer.id, buyer.assignedUnitId || '');
+  const handleIssueKey = async (buyer: Buyer) => {
+    // Call API to generate access code
+    const result = await generateAccessCodeAPI(buyer.id, 60);
 
-    // Update buyer with the generated code and timestamp
-    const updatedBuyer: Buyer = {
-      ...buyer,
-      accessCode: codeObj.code,
-      codeGeneratedAt: Date.now() // Store when code was generated
-    };
-    const updatedBuyers = store.updateBuyer(updatedBuyer);
-    setBuyers(updatedBuyers);
+    if (result.success && result.data) {
+      // Update buyer with the generated code and timestamp
+      const updatedBuyer: Buyer = {
+        ...buyer,
+        accessCode: result.data.code,
+        codeGeneratedAt: Date.now() // Store when code was generated
+      };
+      setBuyers(buyers.map(b => b.id === buyer.id ? updatedBuyer : b));
+    } else {
+      alert(result.error || 'Failed to generate access code. Please try again.');
+    }
   };
 
   // Calculate remaining time for access code (60 minutes validity)
@@ -103,21 +112,42 @@ export const BuilderDashboard: React.FC<BuilderDashboardProps> = ({ onLogout }) 
     return remaining <= 0;
   };
 
+  // Load buyers from API on mount
+  useEffect(() => {
+    const loadBuyers = async () => {
+      const result = await getAllBuyersAPI();
+      if (result.success && result.data) {
+        // Convert API buyers to local format
+        const apiBuyers: Buyer[] = result.data.map((buyer: any) => ({
+          id: buyer._id,
+          name: buyer.name,
+          email: buyer.email || '',
+          phone: buyer.phone,
+          assignedUnitId: null,
+          accessCode: undefined,
+          codeGeneratedAt: undefined
+        }));
+        setBuyers(apiBuyers);
+      }
+    };
+    loadBuyers();
+  }, []);
+
   // Auto-refresh remaining times every second
   useEffect(() => {
     const interval = setInterval(() => {
       // Force re-render to update remaining times
-      setBuyers([...store.getBuyers()]);
+      setBuyers([...buyers]);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [buyers]);
 
   const handleLogout = () => {
     onLogout();
   };
 
-  const handleAddBuyer = (e: React.FormEvent) => {
+  const handleAddBuyer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBuyerName || !newBuyerPhone) {
       alert("Please fill name and phone number.");
@@ -125,27 +155,41 @@ export const BuilderDashboard: React.FC<BuilderDashboardProps> = ({ onLogout }) 
     }
 
     if (editingBuyer) {
-      // Update existing buyer
-      const updatedBuyer: Buyer = {
-        ...editingBuyer,
-        name: newBuyerName,
-        email: newBuyerEmail,
-        phone: newBuyerPhone
-      };
-      const updatedBuyers = store.updateBuyer(updatedBuyer);
-      setBuyers(updatedBuyers);
-      setEditingBuyer(null);
+      // Update existing buyer via API
+      const result = await updateBuyerAPI(editingBuyer.id, newBuyerName, newBuyerEmail, newBuyerPhone);
+
+      if (result.success && result.data) {
+        // Update buyer in state
+        const updatedBuyer: Buyer = {
+          ...editingBuyer,
+          name: result.data.name,
+          email: result.data.email,
+          phone: result.data.phone
+        };
+        setBuyers(buyers.map(b => b.id === editingBuyer.id ? updatedBuyer : b));
+        setEditingBuyer(null);
+      } else {
+        alert(result.error || 'Failed to update buyer. Please try again.');
+        return;
+      }
     } else {
-      // Create new buyer
-      const newBuyer: Buyer = {
-        id: `b${Date.now()}`,
-        name: newBuyerName,
-        email: newBuyerEmail,
-        phone: newBuyerPhone,
-        assignedUnitId: undefined
-      };
-      const updatedBuyers = store.addBuyer(newBuyer);
-      setBuyers(updatedBuyers);
+      // Create new buyer via API
+      const result = await createBuyerAPI(newBuyerName, newBuyerEmail, newBuyerPhone);
+
+      if (result.success && result.data) {
+        // Add buyer to state
+        const newBuyer: Buyer = {
+          id: result.data._id,
+          name: result.data.name,
+          email: result.data.email,
+          phone: result.data.phone,
+          assignedUnitId: null
+        };
+        setBuyers([...buyers, newBuyer]);
+      } else {
+        alert(result.error || 'Failed to create buyer. Please try again.');
+        return;
+      }
     }
 
     // Reset and close modal
@@ -163,10 +207,16 @@ export const BuilderDashboard: React.FC<BuilderDashboardProps> = ({ onLogout }) 
     setIsCreatingBuyer(true);
   };
 
-  const handleDeleteBuyer = (buyerId: string) => {
+  const handleDeleteBuyer = async (buyerId: string) => {
     if (confirm("Are you sure you want to delete this buyer?")) {
-      const updatedBuyers = store.deleteBuyer(buyerId);
-      setBuyers(updatedBuyers);
+      const result = await deleteBuyerAPI(buyerId);
+
+      if (result.success) {
+        // Remove buyer from state
+        setBuyers(buyers.filter(b => b.id !== buyerId));
+      } else {
+        alert(result.error || 'Failed to delete buyer. Please try again.');
+      }
     }
   };
 
